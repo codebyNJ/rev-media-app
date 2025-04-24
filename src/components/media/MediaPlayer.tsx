@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { trackInteraction } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import MediaDetails from "./MediaDetails";
 
 interface MediaPlayerProps {
   media: {
@@ -17,15 +18,32 @@ interface MediaPlayerProps {
   isController?: boolean;
 }
 
+const dummyAds = [
+  {
+    id: "ad1",
+    url: "https://storage.googleapis.com/webfundamentals-assets/videos/chrome.mp4",
+    name: "Chrome Ad",
+    type: "video/mp4"
+  },
+  {
+    id: "ad2",
+    url: "https://storage.googleapis.com/webfundamentals-assets/videos/chrome.webm",
+    name: "Product Ad",
+    type: "video/webm"
+  }
+];
+
 const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [currentAd, setCurrentAd] = useState<typeof dummyAds[0] | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     setIsPlaying(false);
     setHasInteracted(false);
+    setCurrentAd(null);
     
     if (videoRef.current) {
       videoRef.current.pause();
@@ -33,30 +51,79 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     }
   }, [media?.id]);
 
+  const trackAndNotify = (mediaId: string) => {
+    if (!hasInteracted) {
+      trackInteraction(mediaId);
+      setHasInteracted(true);
+      if (isController) {
+        toast({
+          title: "Interaction recorded",
+          description: "Your interaction with this media has been recorded.",
+        });
+      }
+    }
+  };
+
   const handlePlay = () => {
     if (!media) return;
     
     if (videoRef.current) {
       videoRef.current.play();
       setIsPlaying(true);
-    }
-    
-    if (!hasInteracted) {
-      trackInteraction(media.id);
-      setHasInteracted(true);
-      toast({
-        title: "Interaction recorded",
-        description: "Your interaction with this media has been recorded.",
-      });
+      trackAndNotify(media.id);
     }
   };
 
   const handlePause = () => {
+    if (!media) return;
+    
     if (videoRef.current) {
       videoRef.current.pause();
       setIsPlaying(false);
+      trackAndNotify(media.id);
     }
   };
+
+  const showRandomAd = () => {
+    const randomAd = dummyAds[Math.floor(Math.random() * dummyAds.length)];
+    setCurrentAd(randomAd);
+    setTimeout(() => {
+      setCurrentAd(null);
+    }, 5000); // Show ad for 5 seconds
+  };
+
+  const handleSkip = (direction: 'forward' | 'back') => {
+    if (!videoRef.current || !media) return;
+    
+    const skipAmount = 10;
+    const newTime = direction === 'forward' 
+      ? videoRef.current.currentTime + skipAmount 
+      : videoRef.current.currentTime - skipAmount;
+    
+    videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
+    trackAndNotify(media.id);
+    
+    // Show ad on forward skip with 30% chance
+    if (direction === 'forward' && Math.random() < 0.3) {
+      showRandomAd();
+    }
+  };
+
+  if (currentAd) {
+    return (
+      <Card className="media-container">
+        <video 
+          src={currentAd.url} 
+          autoPlay 
+          muted 
+          className="w-full h-full object-contain"
+        />
+        <div className="absolute top-4 right-4 bg-black/75 text-white px-2 py-1 rounded text-sm">
+          Ad
+        </div>
+      </Card>
+    );
+  }
 
   if (!media) {
     return (
@@ -68,95 +135,99 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
 
   if (media.type.startsWith("image")) {
     return (
-      <div className="media-container">
-        <img 
-          src={media.url} 
-          alt={media.name} 
-          className="w-full h-full object-contain" 
-          onClick={() => {
-            if (!hasInteracted) {
-              trackInteraction(media.id);
-              setHasInteracted(true);
-              toast({
-                title: "Interaction recorded",
-                description: "Your interaction with this image has been recorded.",
-              });
-            }
-          }}
-        />
-        <div className="media-overlay">
-          <div className="font-medium">{media.name}</div>
-          <div className="text-sm text-muted-foreground">
+      <div className="space-y-4">
+        <div className="media-container">
+          <img 
+            src={media.url} 
+            alt={media.name} 
+            className="w-full h-full object-contain" 
+            onClick={() => trackAndNotify(media.id)}
+          />
+        </div>
+        <MediaDetails media={media} />
+        {isController && (
+          <div className="text-sm text-muted-foreground text-center">
             {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   if (media.type.startsWith("video")) {
     return (
-      <div className="media-container">
-        <video 
-          ref={videoRef}
-          src={media.url} 
-          className="w-full h-full object-contain" 
-          controls={false}
-        />
-        <div className="media-overlay">
-          <div className="font-medium">{media.name}</div>
-          <div className="flex space-x-2">
+      <div className="space-y-4">
+        <div className="media-container">
+          <video 
+            ref={videoRef}
+            src={media.url} 
+            className="w-full h-full object-contain" 
+            controls={false}
+          />
+          <div className="flex justify-center space-x-2 mt-4">
+            <Button size="sm" variant="outline" onClick={() => handleSkip('back')}>
+              <SkipBack className="h-4 w-4" />
+            </Button>
             {isPlaying ? (
               <Button size="sm" variant="outline" onClick={handlePause}>
-                <Pause className="h-4 w-4 mr-1" />
-                Pause
+                <Pause className="h-4 w-4" />
               </Button>
             ) : (
               <Button size="sm" variant="outline" onClick={handlePlay}>
-                <Play className="h-4 w-4 mr-1" />
-                Play
+                <Play className="h-4 w-4" />
               </Button>
             )}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+            <Button size="sm" variant="outline" onClick={() => handleSkip('forward')}>
+              <SkipForward className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+        <MediaDetails media={media} />
+        {isController && (
+          <div className="text-sm text-muted-foreground text-center">
+            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+          </div>
+        )}
       </div>
     );
   }
 
   if (media.type.startsWith("audio")) {
     return (
-      <Card className="p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium">{media.name}</h3>
-          <div className="text-sm text-muted-foreground">
+      <div className="space-y-4">
+        <Card className="p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">{media.name}</h3>
+          </div>
+          
+          <audio 
+            ref={videoRef} 
+            src={media.url}
+            className="w-full" 
+            controls={false}
+          />
+          
+          <div className="flex justify-center space-x-4">
+            {isPlaying ? (
+              <Button variant="outline" onClick={handlePause}>
+                <Pause className="h-4 w-4 mr-2" />
+                Pause
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handlePlay}>
+                <Play className="h-4 w-4 mr-2" />
+                Play
+              </Button>
+            )}
+          </div>
+        </Card>
+        <MediaDetails media={media} />
+        {isController && (
+          <div className="text-sm text-muted-foreground text-center">
             {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
           </div>
-        </div>
-        
-        <audio 
-          ref={videoRef} 
-          src={media.url}
-          className="w-full" 
-          controls={false}
-        />
-        
-        <div className="flex justify-center space-x-4">
-          {isPlaying ? (
-            <Button variant="outline" onClick={handlePause}>
-              <Pause className="h-4 w-4 mr-2" />
-              Pause
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={handlePlay}>
-              <Play className="h-4 w-4 mr-2" />
-              Play
-            </Button>
-          )}
-        </div>
-      </Card>
+        )}
+      </div>
     );
   }
 
