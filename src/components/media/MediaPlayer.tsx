@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
 import MediaDetails from "./MediaDetails";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@radix-ui/react-dialog";
+import Info from "lucide-react";
 
 interface MediaPlayerProps {
   media: {
@@ -158,8 +160,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
   };
 
   const handleVideoEnd = () => {
-    if (onVideoEnd) {
-      onVideoEnd();
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
     }
   };
 
@@ -195,6 +198,77 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     );
   }
 
+  if (media.type.startsWith("video")) {
+    return (
+      <div className="relative w-full md:w-[768px] mx-auto">
+        <div className="relative aspect-video">
+          <video 
+            ref={videoRef}
+            src={media.url} 
+            className="w-full h-full object-contain bg-black"
+            onEnded={handleVideoEnd}
+            controls={false}
+          />
+          
+          <div className="absolute bottom-4 right-4 z-10">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-black/50 hover:bg-black/70 text-white border-white/20"
+                  onClick={() => {
+                    if (media.id) {
+                      trackInteraction(media.id);
+                    }
+                  }}
+                >
+                  <Info className="h-4 w-4 mr-2" />
+                  Know More
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{media.name}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Type: {media.type.split("/")[0]}
+                  </p>
+                  
+                  {media.timeslotend && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Timer className="h-4 w-4 mr-2" />
+                      <span>Time slot expires: {new Date(media.timeslotend).toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  {isController && (
+                    <p className="text-sm text-muted-foreground">
+                      Interactions: {media.interactions}
+                    </p>
+                  )}
+                  
+                  <p className="text-sm">
+                    This media content is carefully curated to provide you with the best
+                    viewing experience. Interact with the content to make the most of your
+                    viewing session.
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {isController && (
+            <div className="absolute top-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-sm text-white">
+              {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (media.type.startsWith("image")) {
     return (
       <div className="space-y-4">
@@ -205,52 +279,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             className="w-full h-full object-contain" 
             onClick={() => trackAndNotify(media.id)}
           />
-          
-          {isController && remainingTime !== null && (
-            <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
-              <Timer className="h-4 w-4 mr-1" />
-              <span>Time slot remaining: {formatRemainingTime(remainingTime)}</span>
-            </div>
-          )}
-        </div>
-        <MediaDetails media={media} />
-        {isController && (
-          <div className="text-sm text-muted-foreground text-center">
-            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (media.type.startsWith("video")) {
-    return (
-      <div className="space-y-4">
-        <div className="media-container">
-          <video 
-            ref={videoRef}
-            src={media.url} 
-            className="w-full h-full object-contain"
-            onEnded={handleVideoEnd}
-            controls={false}
-          />
-          <div className="flex justify-center space-x-2 mt-4">
-            <Button size="sm" variant="outline" onClick={() => handleSkip('back')}>
-              <SkipBack className="h-4 w-4" />
-            </Button>
-            {isPlaying ? (
-              <Button size="sm" variant="outline" onClick={handlePause}>
-                <Pause className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={handlePlay}>
-                <Play className="h-4 w-4" />
-              </Button>
-            )}
-            <Button size="sm" variant="outline" onClick={() => handleSkip('forward')}>
-              <SkipForward className="h-4 w-4" />
-            </Button>
-          </div>
           
           {isController && remainingTime !== null && (
             <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
