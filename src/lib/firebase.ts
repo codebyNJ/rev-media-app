@@ -83,7 +83,8 @@ export const onActiveMediaChange = (callback: (media: any) => void) => {
       async (payload) => {
         try {
           // When there's a change in active_media, fetch the associated media data
-          if (payload.new && payload.new.media_id) {
+          // Fix: Add proper type checking for payload.new before accessing media_id
+          if (payload.new && typeof payload.new === 'object' && 'media_id' in payload.new && payload.new.media_id) {
             const { data: mediaData } = await supabase
               .from('media')
               .select('*')
@@ -113,7 +114,8 @@ export const onActiveMediaChange = (callback: (media: any) => void) => {
         .limit(1)
         .single();
       
-      if (data && data.media_id) {
+      // Fix: Add proper type checking for data before accessing media_id
+      if (data && typeof data === 'object' && 'media_id' in data && data.media_id) {
         const { data: mediaData } = await supabase
           .from('media')
           .select('*')
