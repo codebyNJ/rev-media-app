@@ -22,36 +22,55 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<"controller" | "client" | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setCurrentUser(session?.user ?? null);
+    // First set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Handle auth state changes
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Signed in",
+          description: "You've been successfully signed in.",
+        });
+        setCurrentUser(newSession?.user ?? null);
+        setSession(newSession);
+      } else if (event === 'SIGNED_OUT') {
+        toast({
+          title: "Signed out",
+          description: "You've been successfully signed out.",
+        });
+        setCurrentUser(null);
+        setSession(null);
+        setUserRole(null); 
+        localStorage.removeItem(`userRole_${currentUser?.id}`);
+      } else if (event === 'TOKEN_REFRESHED') {
+        setSession(newSession);
+      }
+    });
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setCurrentUser(initialSession?.user ?? null);
+      setSession(initialSession);
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  // Restore role from localStorage if available
   useEffect(() => {
-    // Restore role from localStorage if available
     if (currentUser) {
       const savedRole = localStorage.getItem(`userRole_${currentUser.id}`);
       if (savedRole === "controller" || savedRole === "client") {
         setUserRole(savedRole);
       }
-    } else {
-      setUserRole(null);
     }
   }, [currentUser]);
 

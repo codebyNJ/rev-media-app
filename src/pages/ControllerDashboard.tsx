@@ -8,13 +8,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase-client";
+import { toast } from "@/hooks/use-toast";
 
 const ControllerDashboard = () => {
   const [mediaList, setMediaList] = useState<any[]>([]);
   const [activeMedia, setActiveMedia] = useState<any>(null);
   const [filtering, setFiltering] = useState<boolean>(false);
   const [activeVideoQueue, setActiveVideoQueue] = useState<string[]>([]);
-  const { currentUser, userRole } = useAuth();
+  const { currentUser, userRole, loading } = useAuth();
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
 
   // Redirect if not logged in or not a controller
   if (!currentUser || userRole !== "controller") {
@@ -63,12 +69,20 @@ const ControllerDashboard = () => {
   }, [filtering, currentUser]);
 
   const handleUploadComplete = (media: any) => {
+    toast({
+      title: "Upload complete",
+      description: `"${media.name}" has been uploaded successfully.`,
+    });
     // Real-time updates will handle this
   };
 
   const handleMediaChange = async (mediaId: string | null) => {
     if (!mediaId) {
       setActiveMedia(null);
+      toast({
+        title: "Media deactivated",
+        description: "No media is currently active."
+      });
       return;
     }
 
@@ -87,6 +101,10 @@ const ControllerDashboard = () => {
           .single();
 
         setActiveMedia(data);
+        toast({
+          title: "Video activated",
+          description: `Now playing: ${data?.name || "Unknown video"}`
+        });
       }
     } else {
       const { data } = await supabase
@@ -96,6 +114,10 @@ const ControllerDashboard = () => {
         .single();
 
       setActiveMedia(data);
+      toast({
+        title: "Media activated",
+        description: `Now viewing: ${data?.name || "Unknown media"}`
+      });
     }
   };
 
@@ -113,9 +135,17 @@ const ControllerDashboard = () => {
           .single();
         
         setActiveMedia(data);
+        toast({
+          title: "Next video",
+          description: `Now playing: ${data?.name || "Unknown video"}`
+        });
       } else {
         setActiveMedia(null);
         setActiveVideoQueue([]);
+        toast({
+          title: "Playlist ended",
+          description: "All videos in the queue have finished playing."
+        });
       }
     }
   };

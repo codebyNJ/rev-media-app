@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -34,11 +34,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ role }) => {
       if (error) throw error;
 
       setUserRole(role);
-      toast({
-        title: "Logged in successfully",
-        description: `Welcome back as a ${role}!`,
-      });
-
+      
       // Navigate to the appropriate dashboard
       navigate(role === "controller" ? "/controller" : "/client");
     } catch (error: any) {

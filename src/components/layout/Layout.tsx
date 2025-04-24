@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { logoutUser } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
 
 interface LayoutProps {
@@ -12,18 +12,15 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, title }) => {
-  const { currentUser, userRole, setUserRole } = useAuth();
+  const { currentUser, userRole } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
-      await logoutUser();
-      setUserRole(null);
-      toast({
-        title: "Logged out",
-        description: "You've been successfully logged out.",
-      });
+      await supabase.auth.signOut();
+      
+      // Toast notification handled in AuthContext.tsx
       navigate("/");
     } catch (error: any) {
       toast({

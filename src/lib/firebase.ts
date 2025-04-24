@@ -44,13 +44,13 @@ export const getRemainingTime = async (mediaId: string) => {
   try {
     const { data } = await supabase
       .from('media')
-      .select('timeslotend') // Fixed: Changed from timeSlotEnd to timeslotend
+      .select('timeslotend')
       .eq('id', mediaId)
       .single();
     
-    if (data && data.timeslotend) { // Fixed: Changed from timeSlotEnd to timeslotend
+    if (data && data.timeslotend) {
       const now = Date.now();
-      const endTime = new Date(data.timeslotend).getTime(); // Fixed: Changed from timeSlotEnd to timeslotend
+      const endTime = new Date(data.timeslotend).getTime();
       return Math.max(0, endTime - now);
     }
     return null;
@@ -61,14 +61,7 @@ export const getRemainingTime = async (mediaId: string) => {
 };
 
 export const logoutUser = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error("Error logging out:", error);
-    throw error;
-  }
+  return await supabase.auth.signOut();
 };
 
 export const onActiveMediaChange = (callback: (media: MediaRow | null) => void) => {
