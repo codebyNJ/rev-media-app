@@ -17,6 +17,7 @@ interface MediaPlayerProps {
     timeslotend?: number | string;
   } | null;
   isController?: boolean;
+  onVideoEnd?: () => void;
 }
 
 const dummyAds = [
@@ -34,7 +35,7 @@ const dummyAds = [
   }
 ];
 
-const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }) => {
+const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, onVideoEnd }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [currentAd, setCurrentAd] = useState<typeof dummyAds[0] | null>(null);
@@ -51,6 +52,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
+      
+      if (media?.type.startsWith("video")) {
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(error => console.error("Autoplay failed:", error));
+      }
     }
 
     if (media?.remainingTimeMs) {
@@ -134,14 +141,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     }
   };
 
-  const showRandomAd = () => {
-    const randomAd = dummyAds[Math.floor(Math.random() * dummyAds.length)];
-    setCurrentAd(randomAd);
-    setTimeout(() => {
-      setCurrentAd(null);
-    }, 5000);
-  };
-
   const handleSkip = (direction: 'forward' | 'back') => {
     if (!videoRef.current || !media) return;
     
@@ -156,6 +155,20 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     if (direction === 'forward' && Math.random() < 0.3) {
       showRandomAd();
     }
+  };
+
+  const handleVideoEnd = () => {
+    if (onVideoEnd) {
+      onVideoEnd();
+    }
+  };
+
+  const showRandomAd = () => {
+    const randomAd = dummyAds[Math.floor(Math.random() * dummyAds.length)];
+    setCurrentAd(randomAd);
+    setTimeout(() => {
+      setCurrentAd(null);
+    }, 5000);
   };
 
   if (currentAd) {
@@ -217,7 +230,8 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
           <video 
             ref={videoRef}
             src={media.url} 
-            className="w-full h-full object-contain" 
+            className="w-full h-full object-contain"
+            onEnded={handleVideoEnd}
             controls={false}
           />
           <div className="flex justify-center space-x-2 mt-4">

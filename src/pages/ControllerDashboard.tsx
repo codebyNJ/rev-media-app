@@ -13,6 +13,7 @@ const ControllerDashboard = () => {
   const [mediaList, setMediaList] = useState<any[]>([]);
   const [activeMedia, setActiveMedia] = useState<any>(null);
   const [filtering, setFiltering] = useState<boolean>(false);
+  const [activeVideoQueue, setActiveVideoQueue] = useState<string[]>([]);
   const { currentUser, userRole } = useAuth();
 
   // Redirect if not logged in or not a controller
@@ -30,7 +31,7 @@ const ControllerDashboard = () => {
 
       if (data) {
         if (filtering) {
-          const filteredData = data.filter(item => item.userId === currentUser.id);
+          const filteredData = data.filter(item => item.userid === currentUser.id);
           setMediaList(filteredData);
         } else {
           setMediaList(data);
@@ -62,7 +63,7 @@ const ControllerDashboard = () => {
   }, [filtering, currentUser]);
 
   const handleUploadComplete = (media: any) => {
-    // Real-time updates will handle this automatically
+    // Real-time updates will handle this
   };
 
   const handleMediaChange = async (mediaId: string | null) => {
@@ -71,13 +72,52 @@ const ControllerDashboard = () => {
       return;
     }
 
-    const { data } = await supabase
-      .from('media')
-      .select('*')
-      .eq('id', mediaId)
-      .single();
+    const selectedMedia = mediaList.find(m => m.id === mediaId);
+    
+    if (selectedMedia?.type.startsWith("video")) {
+      if (!activeVideoQueue.includes(mediaId)) {
+        setActiveVideoQueue(prev => [...prev, mediaId]);
+      }
+      
+      if (!activeMedia) {
+        const { data } = await supabase
+          .from('media')
+          .select('*')
+          .eq('id', mediaId)
+          .single();
 
-    setActiveMedia(data);
+        setActiveMedia(data);
+      }
+    } else {
+      const { data } = await supabase
+        .from('media')
+        .select('*')
+        .eq('id', mediaId)
+        .single();
+
+      setActiveMedia(data);
+    }
+  };
+
+  const handleVideoEnd = async () => {
+    if (activeVideoQueue.length > 0) {
+      const currentIndex = activeVideoQueue.findIndex(id => id === activeMedia?.id);
+      const nextIndex = currentIndex + 1;
+      
+      if (nextIndex < activeVideoQueue.length) {
+        const nextVideoId = activeVideoQueue[nextIndex];
+        const { data } = await supabase
+          .from('media')
+          .select('*')
+          .eq('id', nextVideoId)
+          .single();
+        
+        setActiveMedia(data);
+      } else {
+        setActiveMedia(null);
+        setActiveVideoQueue([]);
+      }
+    }
   };
 
   return (
@@ -89,7 +129,11 @@ const ControllerDashboard = () => {
               <CardTitle>Active Media</CardTitle>
             </CardHeader>
             <CardContent>
-              <MediaPlayer media={activeMedia} isController={true} />
+              <MediaPlayer 
+                media={activeMedia} 
+                isController={true} 
+                onVideoEnd={handleVideoEnd}
+              />
             </CardContent>
           </Card>
 
