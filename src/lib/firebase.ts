@@ -1,5 +1,9 @@
 
 import { supabase } from "@/lib/supabase-client";
+import { Database } from "@/types/database.types";
+
+type ActiveMediaRow = Database['public']['Tables']['active_media']['Row'];
+type MediaRow = Database['public']['Tables']['media']['Row'];
 
 export const syncMedia = async (mediaId: string | null, userId: string) => {
   try {
@@ -56,7 +60,6 @@ export const getRemainingTime = async (mediaId: string) => {
   }
 };
 
-// Add the missing logoutUser function
 export const logoutUser = async () => {
   try {
     const { error } = await supabase.auth.signOut();
@@ -68,9 +71,7 @@ export const logoutUser = async () => {
   }
 };
 
-// Add the missing onActiveMediaChange function
-export const onActiveMediaChange = (callback: (media: any) => void) => {
-  // Subscribe to changes on the active_media table
+export const onActiveMediaChange = (callback: (media: MediaRow | null) => void) => {
   const channel = supabase
     .channel('active_media_changes')
     .on(
@@ -82,18 +83,20 @@ export const onActiveMediaChange = (callback: (media: any) => void) => {
       },
       async (payload) => {
         try {
-          // When there's a change in active_media, fetch the associated media data
-          // Fix: Add proper type checking for payload.new before accessing media_id
-          if (payload.new && typeof payload.new === 'object' && 'media_id' in payload.new && payload.new.media_id) {
+          if (
+            payload.new &&
+            typeof payload.new === 'object' &&
+            'media_id' in payload.new &&
+            payload.new.media_id
+          ) {
             const { data: mediaData } = await supabase
               .from('media')
               .select('*')
               .eq('id', payload.new.media_id)
               .single();
             
-            callback(mediaData);
+            callback(mediaData || null);
           } else {
-            // If media_id is null or the record was deleted, pass null to indicate no active media
             callback(null);
           }
         } catch (error) {
@@ -114,7 +117,6 @@ export const onActiveMediaChange = (callback: (media: any) => void) => {
         .limit(1)
         .single();
       
-      // Fix: Add proper type checking for data before accessing media_id
       if (data && typeof data === 'object' && 'media_id' in data && data.media_id) {
         const { data: mediaData } = await supabase
           .from('media')
@@ -122,7 +124,7 @@ export const onActiveMediaChange = (callback: (media: any) => void) => {
           .eq('id', data.media_id)
           .single();
         
-        callback(mediaData);
+        callback(mediaData || null);
       } else {
         callback(null);
       }
