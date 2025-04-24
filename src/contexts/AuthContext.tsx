@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, onAuthStateChanged } from "../lib/firebase";
-import { User } from "firebase/auth";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
@@ -27,18 +27,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return unsubscribe;
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     // Restore role from localStorage if available
     if (currentUser) {
-      const savedRole = localStorage.getItem(`userRole_${currentUser.uid}`);
+      const savedRole = localStorage.getItem(`userRole_${currentUser.id}`);
       if (savedRole === "controller" || savedRole === "client") {
         setUserRole(savedRole);
       }
@@ -50,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Save role to localStorage when it changes
   useEffect(() => {
     if (currentUser && userRole) {
-      localStorage.setItem(`userRole_${currentUser.uid}`, userRole);
+      localStorage.setItem(`userRole_${currentUser.id}`, userRole);
     }
   }, [userRole, currentUser]);
 
