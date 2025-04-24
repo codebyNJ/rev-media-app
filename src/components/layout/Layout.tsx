@@ -33,24 +33,43 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-card shadow-md">
+      <header className="bg-card shadow-lg border-b border-white/10">
         <div className="container mx-auto py-4 px-4 sm:px-6 flex items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold">{title}</h1>
-            <div className="ml-4 text-sm text-muted-foreground">
-              {userRole && <span className="px-2 py-1 rounded-full bg-primary/20 text-primary-foreground">{userRole}</span>}
-            </div>
+          <div className="flex items-center space-x-6">
+            <img 
+              src="/lovable-uploads/e2fa95c3-42d8-4225-8fbe-933873129a02.png" 
+              alt="REV Logo" 
+              className="h-8 hover-fade"
+            />
+            <h1 className="text-xl font-semibold tracking-wide">{title}</h1>
+            {userRole && (
+              <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-sm font-medium tracking-wide">
+                {userRole}
+              </span>
+            )}
           </div>
           <div className="flex items-center space-x-4">
             {currentUser ? (
               <>
-                <span className="hidden md:inline text-sm text-muted-foreground">{currentUser.email}</span>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
+                <span className="hidden md:inline text-sm text-muted-foreground">
+                  {currentUser.email}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleLogout}
+                  className="hover-glow"
+                >
                   Logout
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate("/")}
+                className="hover-glow"
+              >
                 Login
               </Button>
             )}
@@ -60,9 +79,11 @@ const Layout: React.FC<LayoutProps> = ({ children, title }) => {
       <main className="flex-grow container mx-auto py-8 px-4 sm:px-6">
         {children}
       </main>
-      <footer className="bg-card py-4">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          Media Sync Stream © {new Date().getFullYear()}
+      <footer className="bg-card py-6 border-t border-white/10">
+        <div className="container mx-auto text-center">
+          <p className="text-sm text-muted-foreground">
+            REV - Reach Every Vehicle © {new Date().getFullYear()}
+          </p>
         </div>
       </footer>
     </div>
