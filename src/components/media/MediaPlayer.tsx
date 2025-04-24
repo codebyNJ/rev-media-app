@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { trackInteraction, getRemainingTime } from "@/lib/firebase";
@@ -15,7 +14,7 @@ interface MediaPlayerProps {
     name: string;
     interactions: number;
     remainingTimeMs?: number;
-    timeSlotEnd?: number;
+    timeslotend?: number | string;
   } | null;
   isController?: boolean;
 }
@@ -54,17 +53,15 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
       videoRef.current.currentTime = 0;
     }
 
-    // Initialize remaining time if available
     if (media?.remainingTimeMs) {
       setRemainingTime(media.remainingTimeMs);
-    } else if (media?.timeslotend) { // Fixed: Changed from timeSlotEnd to timeslotend
+    } else if (media?.timeslotend) {
       const now = Date.now();
       setRemainingTime(Math.max(0, new Date(media.timeslotend).getTime() - now));
     } else {
       setRemainingTime(null);
     }
 
-    // Clean up timer on media change
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -73,7 +70,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     };
   }, [media?.id]);
 
-  // Set up timer to update remaining time
   useEffect(() => {
     if (media && isController && remainingTime !== null) {
       timerRef.current = setInterval(() => {
@@ -143,7 +139,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     setCurrentAd(randomAd);
     setTimeout(() => {
       setCurrentAd(null);
-    }, 5000); // Show ad for 5 seconds
+    }, 5000);
   };
 
   const handleSkip = (direction: 'forward' | 'back') => {
@@ -157,7 +153,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
     trackAndNotify(media.id);
     
-    // Show ad on forward skip with 30% chance
     if (direction === 'forward' && Math.random() < 0.3) {
       showRandomAd();
     }
