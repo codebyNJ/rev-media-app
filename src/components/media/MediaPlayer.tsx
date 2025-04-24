@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { trackInteraction } from "@/lib/firebase";
+import { trackInteraction, getRemainingTime } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
 import MediaDetails from "./MediaDetails";
 
 interface MediaPlayerProps {
@@ -14,6 +14,8 @@ interface MediaPlayerProps {
     type: string;
     name: string;
     interactions: number;
+    remainingTimeMs?: number;
+    timeSlotEnd?: number;
   } | null;
   isController?: boolean;
 }
@@ -37,7 +39,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [currentAd, setCurrentAd] = useState<typeof dummyAds[0] | null>(null);
+  const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,7 +53,57 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
     }
+
+    // Initialize remaining time if available
+    if (media?.remainingTimeMs) {
+      setRemainingTime(media.remainingTimeMs);
+    } else if (media?.timeSlotEnd) {
+      const now = Date.now();
+      setRemainingTime(Math.max(0, media.timeSlotEnd - now));
+    } else {
+      setRemainingTime(null);
+    }
+
+    // Clean up timer on media change
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [media?.id]);
+
+  // Set up timer to update remaining time
+  useEffect(() => {
+    if (media && isController && remainingTime !== null) {
+      timerRef.current = setInterval(() => {
+        setRemainingTime(prevTime => {
+          if (prevTime === null || prevTime <= 0) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+            return 0;
+          }
+          return prevTime - 1000;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [media, isController, remainingTime]);
+
+  const formatRemainingTime = (timeMs: number) => {
+    const totalSeconds = Math.floor(timeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const trackAndNotify = (mediaId: string) => {
     if (!hasInteracted) {
@@ -143,6 +197,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
             className="w-full h-full object-contain" 
             onClick={() => trackAndNotify(media.id)}
           />
+          
+          {isController && remainingTime !== null && (
+            <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
+              <Timer className="h-4 w-4 mr-1" />
+              <span>Time slot remaining: {formatRemainingTime(remainingTime)}</span>
+            </div>
+          )}
         </div>
         <MediaDetails media={media} />
         {isController && (
@@ -181,6 +242,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
               <SkipForward className="h-4 w-4" />
             </Button>
           </div>
+          
+          {isController && remainingTime !== null && (
+            <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
+              <Timer className="h-4 w-4 mr-1" />
+              <span>Time slot remaining: {formatRemainingTime(remainingTime)}</span>
+            </div>
+          )}
         </div>
         <MediaDetails media={media} />
         {isController && (
@@ -198,6 +266,13 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
         <Card className="p-6 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">{media.name}</h3>
+            
+            {isController && remainingTime !== null && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Timer className="h-4 w-4 mr-1" />
+                <span>{formatRemainingTime(remainingTime)}</span>
+              </div>
+            )}
           </div>
           
           <audio 

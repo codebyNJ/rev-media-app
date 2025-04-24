@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { syncMedia } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Timer } from "lucide-react";
 
 interface MediaItemProps {
   media: {
@@ -13,12 +14,27 @@ interface MediaItemProps {
     type: string;
     name: string;
     interactions: number;
+    timeSlotEnd?: number;
   };
   isActive: boolean;
   onActivate: () => void;
 }
 
 const MediaItem: React.FC<MediaItemProps> = ({ media, isActive, onActivate }) => {
+  // Calculate remaining time in the time slot
+  const getRemainingTimeDisplay = () => {
+    if (!media.timeSlotEnd) return null;
+    
+    const now = Date.now();
+    const remainingMs = Math.max(0, media.timeSlotEnd - now);
+    const remainingMinutes = Math.floor(remainingMs / (60 * 1000));
+    const remainingSeconds = Math.floor((remainingMs % (60 * 1000)) / 1000);
+    
+    return `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+  
+  const timeDisplay = getRemainingTimeDisplay();
+
   return (
     <div 
       className={`p-3 border rounded-lg mb-2 flex justify-between items-center transition-colors ${
@@ -33,8 +49,14 @@ const MediaItem: React.FC<MediaItemProps> = ({ media, isActive, onActivate }) =>
         </div>
         <div className="overflow-hidden">
           <div className="font-medium truncate">{media.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+          <div className="text-xs text-muted-foreground flex items-center">
+            <span>{media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}</span>
+            {timeDisplay && (
+              <span className="ml-2 flex items-center">
+                <Timer className="h-3 w-3 mr-1" />
+                {timeDisplay}
+              </span>
+            )}
           </div>
         </div>
       </div>

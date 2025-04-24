@@ -17,7 +17,8 @@ import {
   update,
   increment,
   get,
-  child 
+  child,
+  serverTimestamp
 } from 'firebase/database';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -39,6 +40,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 const storage = getStorage(app);
+
+// Constants
+const TIME_SLOT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // Auth functions
 export const loginUser = (email: string, password: string) => {
@@ -66,15 +70,19 @@ export const uploadMedia = async (file: File, userId: string, type: string) => {
   const mediaRef = ref(db, 'media');
   const newMediaRef = push(mediaRef);
   
+  const now = Date.now();
+  const endTimeSlot = now + TIME_SLOT_DURATION;
+  
   const media = {
     id: newMediaRef.key,
     url: downloadURL,
     type,
     userId,
     name: file.name,
-    uploadTime: Date.now(),
+    uploadTime: now,
     interactions: 0,
-    active: false
+    active: false,
+    timeSlotEnd: endTimeSlot // When the 5-minute time slot ends
   };
   
   await set(newMediaRef, media);
@@ -97,14 +105,32 @@ export const syncMedia = async (mediaId: string | null, userId: string) => {
   
   const media = mediaSnapshot.val();
   
+  // Calculate remaining time in the time slot
+  const now = Date.now();
+  const remainingTime = Math.max(0, media.timeSlotEnd - now);
+  
   // Set as active media
   await set(ref(db, 'activeMedia'), {
     ...media,
     activatedBy: userId,
-    activatedAt: Date.now()
+    activatedAt: now,
+    remainingTimeMs: remainingTime
   });
   
   return media;
+};
+
+export const getRemainingTime = async (mediaId: string) => {
+  const mediaRef = ref(db, `media/${mediaId}`);
+  const mediaSnapshot = await get(mediaRef);
+  
+  if (!mediaSnapshot.exists()) {
+    return 0;
+  }
+  
+  const media = mediaSnapshot.val();
+  const now = Date.now();
+  return Math.max(0, media.timeSlotEnd - now);
 };
 
 export const trackInteraction = async (mediaId: string) => {
