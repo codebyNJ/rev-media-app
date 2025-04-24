@@ -7,7 +7,7 @@ import MediaPlayer from "@/components/media/MediaPlayer";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase-client";
 
 const ControllerDashboard = () => {
   const [mediaList, setMediaList] = useState<any[]>([]);
