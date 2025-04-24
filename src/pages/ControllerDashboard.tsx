@@ -24,7 +24,7 @@ const ControllerDashboard = () => {
     const unsubscribeMedia = onMediaListChange((mediaItems) => {
       if (filtering) {
         // Only show media uploaded by the current user
-        const userId = getCurrentUser()?.uid;
+        const userId = getCurrentUser()?.uid || currentUser.id;
         const filteredMedia = mediaItems.filter((media) => media.userId === userId);
         setMediaList(filteredMedia);
       } else {
@@ -43,7 +43,7 @@ const ControllerDashboard = () => {
       unsubscribeMedia();
       unsubscribeActive();
     };
-  }, [filtering]);
+  }, [filtering, currentUser]);
 
   const handleUploadComplete = (media: any) => {
     // Refresh media list (it will happen automatically via the listener)

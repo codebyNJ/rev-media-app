@@ -65,7 +65,7 @@ const MediaList: React.FC<MediaListProps> = ({
     try {
       if (activeMediaId === mediaId) {
         // Deactivate if the same media is clicked
-        await syncMedia(null, currentUser.uid);
+        await syncMedia(null, currentUser.id);
         onMediaChange(null);
         toast({
           title: "Media deactivated",
@@ -73,7 +73,7 @@ const MediaList: React.FC<MediaListProps> = ({
         });
       } else {
         // Activate new media
-        await syncMedia(mediaId, currentUser.uid);
+        await syncMedia(mediaId, currentUser.id);
         onMediaChange(mediaId);
         toast({
           title: "Media activated",

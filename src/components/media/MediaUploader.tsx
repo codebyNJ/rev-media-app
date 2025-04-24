@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { uploadMedia } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { upload } from "lucide-react";
+import { Upload } from "lucide-react";
 
 const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ onUploadComplete }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -32,7 +32,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       else if (file.type.startsWith("video/")) type = "video";
       else if (file.type.startsWith("audio/")) type = "audio";
 
-      const media = await uploadMedia(file, currentUser.uid, type);
+      const media = await uploadMedia(file, currentUser.id, type);
       
       toast({
         title: "Upload successful",
@@ -89,7 +89,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
             "Uploading..."
           ) : (
             <>
-              <upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 mr-2" />
               Upload
             </>
           )}
