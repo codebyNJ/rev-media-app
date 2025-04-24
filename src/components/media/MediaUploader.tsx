@@ -57,9 +57,9 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
           name: file.name,
           type: file.type,
           url: publicUrl,
-          userId: currentUser.id,
+          userid: currentUser.id, // Fixed: Changed from userId to userid to match DB schema
           interactions: 0,
-          timeSlotEnd: new Date(timeSlotEnd).toISOString()
+          timeslotend: new Date(timeSlotEnd).toISOString() // Fixed: Changed from timeSlotEnd to timeslotend
         })
         .select()
         .single();
@@ -84,6 +84,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
         description: error.message,
         variant: "destructive",
       });
+      console.error("Upload error details:", error);
     } finally {
       setIsUploading(false);
     }

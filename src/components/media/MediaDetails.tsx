@@ -15,16 +15,16 @@ interface MediaDetailsProps {
     name: string;
     type: string;
     interactions?: number;
-    timeSlotEnd?: number;
+    timeslotend?: string | number; // Fixed: Changed from timeSlotEnd to timeslotend
   };
 }
 
 const MediaDetails: React.FC<MediaDetailsProps> = ({ media }) => {
   // Format time slot expiration
   const getTimeSlotDisplay = () => {
-    if (!media.timeSlotEnd) return null;
+    if (!media.timeslotend) return null; // Fixed: Changed from timeSlotEnd to timeslotend
     
-    const date = new Date(media.timeSlotEnd);
+    const date = new Date(media.timeslotend); // Fixed: Changed from timeSlotEnd to timeslotend
     return `${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
   };
   

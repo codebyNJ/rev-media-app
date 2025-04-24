@@ -57,9 +57,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false }
     // Initialize remaining time if available
     if (media?.remainingTimeMs) {
       setRemainingTime(media.remainingTimeMs);
-    } else if (media?.timeSlotEnd) {
+    } else if (media?.timeslotend) { // Fixed: Changed from timeSlotEnd to timeslotend
       const now = Date.now();
-      setRemainingTime(Math.max(0, media.timeSlotEnd - now));
+      setRemainingTime(Math.max(0, new Date(media.timeslotend).getTime() - now));
     } else {
       setRemainingTime(null);
     }

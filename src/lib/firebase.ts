@@ -44,13 +44,13 @@ export const getRemainingTime = async (mediaId: string) => {
   try {
     const { data } = await supabase
       .from('media')
-      .select('timeSlotEnd')
+      .select('timeslotend') // Fixed: Changed from timeSlotEnd to timeslotend
       .eq('id', mediaId)
       .single();
     
-    if (data && data.timeSlotEnd) {
+    if (data && data.timeslotend) { // Fixed: Changed from timeSlotEnd to timeslotend
       const now = Date.now();
-      const endTime = new Date(data.timeSlotEnd).getTime();
+      const endTime = new Date(data.timeslotend).getTime(); // Fixed: Changed from timeSlotEnd to timeslotend
       return Math.max(0, endTime - now);
     }
     return null;
