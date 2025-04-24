@@ -26,7 +26,7 @@ const ClientView = () => {
 
   return (
     <Layout title="Client View">
-      <div className="max-w-full mx-auto px-0">
+      <div className="max-w-full h-full mx-auto px-0 flex items-center justify-center">
         <MediaPlayer media={activeMedia} />
       </div>
     </Layout>

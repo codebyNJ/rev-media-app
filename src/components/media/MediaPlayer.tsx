@@ -1,12 +1,18 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { trackInteraction, getRemainingTime } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Timer } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Timer, Info } from "lucide-react";
 import MediaDetails from "./MediaDetails";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@radix-ui/react-dialog";
-import Info from "lucide-react";
+import { 
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 interface MediaPlayerProps {
   media: {
@@ -200,7 +206,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
 
   if (media.type.startsWith("video")) {
     return (
-      <div className="relative w-full md:w-[768px] mx-auto">
+      <div className="relative w-full md:w-full mx-auto">
         <div className="relative aspect-video">
           <video 
             ref={videoRef}
@@ -208,6 +214,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             className="w-full h-full object-contain bg-black"
             onEnded={handleVideoEnd}
             controls={false}
+            loop={true}
           />
           
           <div className="absolute bottom-4 right-4 z-10">
