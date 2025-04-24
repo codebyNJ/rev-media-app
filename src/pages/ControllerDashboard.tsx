@@ -4,10 +4,10 @@ import Layout from "@/components/layout/Layout";
 import MediaUploader from "@/components/media/MediaUploader";
 import MediaList from "@/components/media/MediaList";
 import MediaPlayer from "@/components/media/MediaPlayer";
-import { onMediaListChange, onActiveMediaChange, getCurrentUser } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 
 const ControllerDashboard = () => {
   const [mediaList, setMediaList] = useState<any[]>([]);
@@ -21,37 +21,63 @@ const ControllerDashboard = () => {
   }
 
   useEffect(() => {
-    const unsubscribeMedia = onMediaListChange((mediaItems) => {
-      if (filtering) {
-        // Only show media uploaded by the current user
-        const userId = getCurrentUser()?.uid || currentUser.id;
-        const filteredMedia = mediaItems.filter((media) => media.userId === userId);
-        setMediaList(filteredMedia);
-      } else {
-        setMediaList(mediaItems);
+    // Initial fetch of media items
+    const fetchMedia = async () => {
+      const { data } = await supabase
+        .from('media')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (data) {
+        if (filtering) {
+          const filteredData = data.filter(item => item.userId === currentUser.id);
+          setMediaList(filteredData);
+        } else {
+          setMediaList(data);
+        }
       }
-    });
+    };
 
-    const unsubscribeActive = onActiveMediaChange((media) => {
-      setActiveMedia(media);
-    });
+    fetchMedia();
 
-    // Set initial filtering to true to show only user's media
-    setFiltering(true);
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('media-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'media'
+        },
+        (payload) => {
+          fetchMedia(); // Refetch all media when changes occur
+        }
+      )
+      .subscribe();
 
     return () => {
-      unsubscribeMedia();
-      unsubscribeActive();
+      supabase.removeChannel(channel);
     };
   }, [filtering, currentUser]);
 
   const handleUploadComplete = (media: any) => {
-    // Refresh media list (it will happen automatically via the listener)
+    // Real-time updates will handle this automatically
   };
 
-  const handleMediaChange = (mediaId: string | null) => {
-    const selectedMedia = mediaId ? mediaList.find((m) => m.id === mediaId) : null;
-    setActiveMedia(selectedMedia);
+  const handleMediaChange = async (mediaId: string | null) => {
+    if (!mediaId) {
+      setActiveMedia(null);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('media')
+      .select('*')
+      .eq('id', mediaId)
+      .single();
+
+    setActiveMedia(data);
   };
 
   return (
