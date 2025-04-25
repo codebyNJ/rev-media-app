@@ -1,18 +1,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { trackInteraction, getRemainingTime } from "@/lib/firebase";
-import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { Play, Pause, SkipBack, SkipForward, Timer, Info } from "lucide-react";
-import MediaDetails from "./MediaDetails";
-import { 
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
+import VideoPlayer from "./video/VideoPlayer";
+import ImageViewer from "./image/ImageViewer";
+import AudioPlayer from "./audio/AudioPlayer";
+import Advertisement from "./ads/Advertisement";
 
 interface MediaPlayerProps {
   media: {
@@ -45,35 +37,19 @@ const dummyAds = [
 
 const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, onVideoEnd }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const [currentAd, setCurrentAd] = useState<typeof dummyAds[0] | null>(null);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [interactions, setInteractions] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     setIsPlaying(false);
-    setHasInteracted(false);
     setCurrentAd(null);
     
     if (media) {
       setInteractions(media.interactions || 0);
     }
     
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-      videoRef.current.loop = true;
-      
-      if (media?.type.startsWith("video")) {
-        videoRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(error => console.error("Autoplay failed:", error));
-      }
-    }
-
     if (media?.remainingTimeMs) {
       setRemainingTime(media.remainingTimeMs);
     } else if (media?.timeslotend) {
@@ -86,7 +62,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
-        timerRef.current = null;
       }
     };
   }, [media?.id]);
@@ -98,7 +73,6 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
           if (prevTime === null || prevTime <= 0) {
             if (timerRef.current) {
               clearInterval(timerRef.current);
-              timerRef.current = null;
             }
             return 0;
           }
@@ -110,97 +84,16 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
-        timerRef.current = null;
       }
     };
   }, [media, isController, remainingTime]);
 
-  const formatRemainingTime = (timeMs: number) => {
-    const totalSeconds = Math.floor(timeMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const trackAndNotify = async (mediaId: string) => {
-    const success = await trackInteraction(mediaId);
-    if (success) {
-      setInteractions(prev => prev + 1);
-      setHasInteracted(true);
-      if (isController) {
-        toast({
-          title: "Interaction recorded",
-          description: "Your interaction with this media has been recorded.",
-        });
-      }
-    }
-  };
-
-  const handlePlay = () => {
-    if (!media) return;
-    
-    if (videoRef.current) {
-      videoRef.current.play();
-      setIsPlaying(true);
-      trackAndNotify(media.id);
-    }
-  };
-
-  const handlePause = () => {
-    if (!media) return;
-    
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-      trackAndNotify(media.id);
-    }
-  };
-
-  const handleSkip = (direction: 'forward' | 'back') => {
-    if (!videoRef.current || !media) return;
-    
-    const skipAmount = 10;
-    const newTime = direction === 'forward' 
-      ? videoRef.current.currentTime + skipAmount 
-      : videoRef.current.currentTime - skipAmount;
-    
-    videoRef.current.currentTime = Math.max(0, Math.min(newTime, videoRef.current.duration));
-    trackAndNotify(media.id);
-    
-    if (direction === 'forward' && Math.random() < 0.3) {
-      showRandomAd();
-    }
-  };
-
-  const handleVideoEnd = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play();
-    }
-  };
-
-  const showRandomAd = () => {
-    const randomAd = dummyAds[Math.floor(Math.random() * dummyAds.length)];
-    setCurrentAd(randomAd);
-    setTimeout(() => {
-      setCurrentAd(null);
-    }, 5000);
+  const handleInteraction = () => {
+    setInteractions(prev => prev + 1);
   };
 
   if (currentAd) {
-    return (
-      <Card className="media-container">
-        <video 
-          src={currentAd.url} 
-          autoPlay 
-          muted 
-          className="w-full h-full object-contain"
-        />
-        <div className="absolute top-4 right-4 bg-black/75 text-white px-2 py-1 rounded text-sm">
-          Ad
-        </div>
-      </Card>
-    );
+    return <Advertisement url={currentAd.url} name={currentAd.name} />;
   }
 
   if (!media) {
@@ -214,146 +107,51 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
   if (media.type.startsWith("video")) {
     return (
       <div className="relative w-full md:w-full mx-auto">
-        <div className="relative aspect-video">
-          <video 
-            ref={videoRef}
-            src={media.url} 
-            className="w-full h-full object-contain bg-black"
-            onEnded={handleVideoEnd}
-            controls={false}
-            loop={true}
-          />
-          
-          <div className="absolute bottom-4 right-4 z-10">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="bg-[#0EA5E9] text-white hover:bg-[#0284C7] transition-colors duration-300 shadow-lg"
-                  onClick={() => {
-                    if (media.id) {
-                      trackAndNotify(media.id);
-                    }
-                  }}
-                >
-                  <Info className="h-4 w-4 mr-2" />
-                  Know More
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{media.name}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Type: {media.type.split("/")[0]}
-                  </p>
-                  
-                  {media.timeslotend && (
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Timer className="h-4 w-4 mr-2" />
-                      <span>Time slot expires: {new Date(media.timeslotend).toLocaleString()}</span>
-                    </div>
-                  )}
-                  
-                  {isController && (
-                    <p className="text-sm text-muted-foreground">
-                      Interactions: {interactions}
-                    </p>
-                  )}
-                  
-                  <p className="text-sm">
-                    This media content is carefully curated to provide you with the best
-                    viewing experience. Interact with the content to make the most of your
-                    viewing session.
-                  </p>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {isController && (
-            <div className="absolute top-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-sm text-white">
-              {interactions} {interactions === 1 ? "interaction" : "interactions"}
-            </div>
-          )}
-        </div>
+        <VideoPlayer
+          url={media.url}
+          mediaId={media.id}
+          isPlaying={isPlaying}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onVideoEnd={onVideoEnd}
+          onInteraction={handleInteraction}
+        />
       </div>
     );
   }
 
   if (media.type.startsWith("image")) {
     return (
-      <div className="space-y-4">
-        <div className="media-container">
-          <img 
-            src={media.url} 
-            alt={media.name} 
-            className="w-full h-full object-contain" 
-            onClick={() => media && trackAndNotify(media.id)}
-          />
-          
-          {isController && remainingTime !== null && (
-            <div className="flex items-center justify-center mt-2 text-sm text-muted-foreground">
-              <Timer className="h-4 w-4 mr-1" />
-              <span>Time slot remaining: {formatRemainingTime(remainingTime)}</span>
-            </div>
-          )}
-        </div>
-        <MediaDetails media={{...media, interactions}} />
-        {isController && (
-          <div className="text-sm text-muted-foreground text-center">
-            {interactions} {interactions === 1 ? "interaction" : "interactions"}
-          </div>
-        )}
-      </div>
+      <ImageViewer
+        url={media.url}
+        name={media.name}
+        mediaId={media.id}
+        type={media.type}
+        remainingTime={remainingTime}
+        isController={isController}
+        interactions={interactions}
+        timeslotend={media.timeslotend}
+        onInteraction={handleInteraction}
+      />
     );
   }
 
   if (media.type.startsWith("audio")) {
     return (
-      <div className="space-y-4">
-        <Card className="p-6 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium">{media.name}</h3>
-            
-            {isController && remainingTime !== null && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Timer className="h-4 w-4 mr-1" />
-                <span>{formatRemainingTime(remainingTime)}</span>
-              </div>
-            )}
-          </div>
-          
-          <audio 
-            ref={videoRef} 
-            src={media.url}
-            className="w-full" 
-            controls={false}
-          />
-          
-          <div className="flex justify-center space-x-4">
-            {isPlaying ? (
-              <Button variant="outline" onClick={handlePause}>
-                <Pause className="h-4 w-4 mr-2" />
-                Pause
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={handlePlay}>
-                <Play className="h-4 w-4 mr-2" />
-                Play
-              </Button>
-            )}
-          </div>
-        </Card>
-        <MediaDetails media={{...media, interactions}} />
-        {isController && (
-          <div className="text-sm text-muted-foreground text-center">
-            {interactions} {interactions === 1 ? "interaction" : "interactions"}
-          </div>
-        )}
-      </div>
+      <AudioPlayer
+        url={media.url}
+        name={media.name}
+        mediaId={media.id}
+        type={media.type}
+        remainingTime={remainingTime}
+        isController={isController}
+        isPlaying={isPlaying}
+        interactions={interactions}
+        timeslotend={media.timeslotend}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onInteraction={handleInteraction}
+      />
     );
   }
 
