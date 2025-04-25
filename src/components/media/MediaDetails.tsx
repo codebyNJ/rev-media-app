@@ -17,9 +17,10 @@ interface MediaDetailsProps {
     interactions?: number;
     timeslotend?: string | number;
   };
+  onKnowMoreClick?: () => void;
 }
 
-const MediaDetails: React.FC<MediaDetailsProps> = ({ media }) => {
+const MediaDetails: React.FC<MediaDetailsProps> = ({ media, onKnowMoreClick }) => {
   // Format time slot expiration
   const getTimeSlotDisplay = () => {
     if (!media.timeslotend) return null;
@@ -30,10 +31,16 @@ const MediaDetails: React.FC<MediaDetailsProps> = ({ media }) => {
   
   const timeSlotDisplay = getTimeSlotDisplay();
 
+  const handleClick = () => {
+    if (onKnowMoreClick) {
+      onKnowMoreClick();
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="mt-4">
+        <Button variant="outline" size="sm" className="mt-4" onClick={handleClick}>
           <Info className="h-4 w-4 mr-2" />
           Know More
         </Button>

@@ -39,6 +39,11 @@ const ImageViewer = ({
     onInteraction();
   };
 
+  const handleKnowMoreClick = async () => {
+    await trackInteraction(mediaId);
+    onInteraction();
+  };
+
   return (
     <div className="space-y-4">
       <div className="media-container">
@@ -56,7 +61,10 @@ const ImageViewer = ({
           </div>
         )}
       </div>
-      <MediaDetails media={{ name, type, interactions, timeslotend }} />
+      <MediaDetails 
+        media={{ name, type, interactions, timeslotend }} 
+        onKnowMoreClick={handleKnowMoreClick}
+      />
       {isController && (
         <div className="text-sm text-muted-foreground text-center">
           {interactions} {interactions === 1 ? "interaction" : "interactions"}

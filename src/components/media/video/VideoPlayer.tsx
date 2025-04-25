@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from "react";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaDetails from "../MediaDetails";
+import { trackInteraction } from "@/lib/firebase";
 
 interface VideoPlayerProps {
   url: string;
@@ -33,6 +34,13 @@ const VideoPlayer = ({
     }
   }, [url]);
 
+  const handleInteraction = async () => {
+    // Track interaction in Supabase
+    await trackInteraction(mediaId);
+    // Call the parent onInteraction callback
+    onInteraction();
+  };
+
   return (
     <div className="relative aspect-video group">
       <video 
@@ -54,6 +62,7 @@ const VideoPlayer = ({
               type: "video",
               interactions: 0
             }} 
+            onKnowMoreClick={handleInteraction}
           />
         </div>
       </div>
@@ -62,4 +71,3 @@ const VideoPlayer = ({
 };
 
 export default VideoPlayer;
-
