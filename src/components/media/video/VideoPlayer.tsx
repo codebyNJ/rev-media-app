@@ -1,5 +1,7 @@
 
 import React, { useRef, useEffect } from "react";
+import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import MediaDetails from "../MediaDetails";
 
 interface VideoPlayerProps {
@@ -32,7 +34,7 @@ const VideoPlayer = ({
   }, [url]);
 
   return (
-    <div className="relative aspect-video">
+    <div className="relative aspect-video group">
       <video 
         ref={videoRef}
         src={url} 
@@ -44,6 +46,15 @@ const VideoPlayer = ({
         playsInline={true}
         muted={true}
       />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30">
+        <MediaDetails 
+          media={{ 
+            name: "Video Content",
+            type: "video",
+            interactions: 0
+          }} 
+        />
+      </div>
     </div>
   );
 };
