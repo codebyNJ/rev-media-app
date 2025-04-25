@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
-import { MediaDetailsForm } from "./MediaDetailsForm";
+import { MediaDetailsForm, MediaDetailsFormData } from "./MediaDetailsForm";
 
 const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ onUploadComplete }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -21,7 +22,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
     }
   };
 
-  const handleUpload = async (formData: { company_name: string; time_slot: number }) => {
+  const handleUpload = async (formData: MediaDetailsFormData) => {
     if (!file || !currentUser) return;
 
     setIsUploading(true);
@@ -120,8 +121,6 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
             </div>
             
             <MediaDetailsForm onSubmit={handleUpload} />
-            
-          
           </>
         )}
       </CardContent>

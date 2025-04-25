@@ -1,26 +1,31 @@
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
+import { Database } from "@/types/database.types";
 
-const companyNames = ["Company1", "Company2", "Company3", "Company4"] as const;
+// Get the company_name type from the database types
+type CompanyName = Database["public"]["Enums"]["company_name"];
+const companyNames: CompanyName[] = ["Company1", "Company2", "Company3", "Company4"];
 
 const formSchema = z.object({
   company_name: z.enum(companyNames),
   time_slot: z.number().min(1, "Time slot must be greater than 0"),
 });
 
+export type MediaDetailsFormData = z.infer<typeof formSchema>;
+
 type MediaDetailsFormProps = {
-  onSubmit: (data: z.infer<typeof formSchema>) => void;
+  onSubmit: (data: MediaDetailsFormData) => void;
 };
 
 export function MediaDetailsForm({ onSubmit }: MediaDetailsFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<MediaDetailsFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       company_name: "Company1",
@@ -28,9 +33,13 @@ export function MediaDetailsForm({ onSubmit }: MediaDetailsFormProps) {
     },
   });
 
+  const handleSubmit = (data: MediaDetailsFormData) => {
+    onSubmit(data);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="company_name"
@@ -74,6 +83,8 @@ export function MediaDetailsForm({ onSubmit }: MediaDetailsFormProps) {
             </FormItem>
           )}
         />
+
+        <Button type="submit" className="w-full">Upload Media</Button>
       </form>
     </Form>
   );
