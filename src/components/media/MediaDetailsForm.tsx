@@ -7,12 +7,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
-import { Database } from "@/types/database.types";
 
-// Get the company_name type from the database types
-type CompanyName = Database["public"]["Enums"]["company_name"];
-const companyNames: CompanyName[] = ["Company1", "Company2", "Company3", "Company4"];
+// Define the company names as a tuple of string literals
+const companyNames = ["Company1", "Company2", "Company3", "Company4"] as const;
 
+// Create a schema using z.enum with the literal values
 const formSchema = z.object({
   company_name: z.enum(companyNames),
   time_slot: z.number().min(1, "Time slot must be greater than 0"),
