@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { trackInteraction, getRemainingTime } from "@/lib/firebase";
@@ -47,6 +48,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [currentAd, setCurrentAd] = useState<typeof dummyAds[0] | null>(null);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
+  const [interactions, setInteractions] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
@@ -55,6 +57,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     setIsPlaying(false);
     setHasInteracted(false);
     setCurrentAd(null);
+    
+    if (media) {
+      setInteractions(media.interactions || 0);
+    }
     
     if (videoRef.current) {
       videoRef.current.pause();
@@ -116,9 +122,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const trackAndNotify = (mediaId: string) => {
-    if (!hasInteracted) {
-      trackInteraction(mediaId);
+  const trackAndNotify = async (mediaId: string) => {
+    const success = await trackInteraction(mediaId);
+    if (success) {
+      setInteractions(prev => prev + 1);
       setHasInteracted(true);
       if (isController) {
         toast({
@@ -226,7 +233,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
                   className="bg-[#0EA5E9] text-white hover:bg-[#0284C7] transition-colors duration-300 shadow-lg"
                   onClick={() => {
                     if (media.id) {
-                      trackInteraction(media.id);
+                      trackAndNotify(media.id);
                     }
                   }}
                 >
@@ -252,7 +259,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
                   
                   {isController && (
                     <p className="text-sm text-muted-foreground">
-                      Interactions: {media.interactions}
+                      Interactions: {interactions}
                     </p>
                   )}
                   
@@ -268,7 +275,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
 
           {isController && (
             <div className="absolute top-4 right-4 bg-black/50 px-3 py-1.5 rounded-full text-sm text-white">
-              {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+              {interactions} {interactions === 1 ? "interaction" : "interactions"}
             </div>
           )}
         </div>
@@ -284,7 +291,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             src={media.url} 
             alt={media.name} 
             className="w-full h-full object-contain" 
-            onClick={() => trackAndNotify(media.id)}
+            onClick={() => media && trackAndNotify(media.id)}
           />
           
           {isController && remainingTime !== null && (
@@ -294,10 +301,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             </div>
           )}
         </div>
-        <MediaDetails media={media} />
+        <MediaDetails media={{...media, interactions}} />
         {isController && (
           <div className="text-sm text-muted-foreground text-center">
-            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+            {interactions} {interactions === 1 ? "interaction" : "interactions"}
           </div>
         )}
       </div>
@@ -340,10 +347,10 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             )}
           </div>
         </Card>
-        <MediaDetails media={media} />
+        <MediaDetails media={{...media, interactions}} />
         {isController && (
           <div className="text-sm text-muted-foreground text-center">
-            {media.interactions} {media.interactions === 1 ? "interaction" : "interactions"}
+            {interactions} {interactions === 1 ? "interaction" : "interactions"}
           </div>
         )}
       </div>

@@ -32,7 +32,14 @@ export const syncMedia = async (mediaId: string | null, userId: string) => {
 
 export const trackInteraction = async (mediaId: string) => {
   try {
-    await supabase.rpc('increment_media_interaction', { media_id: mediaId });
+    const { error } = await supabase.rpc('increment_media_interaction', { media_id: mediaId });
+    
+    if (error) {
+      console.error("Error incrementing interaction:", error);
+      return false;
+    }
+    
+    console.log("Media interaction tracked successfully for ID:", mediaId);
     return true;
   } catch (error) {
     console.error("Error tracking interaction:", error);
