@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { trackInteraction, getRemainingTime } from "@/lib/firebase";
@@ -60,7 +59,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
-      videoRef.current.loop = true;  // Set loop property
+      videoRef.current.loop = true;
       
       if (media?.type.startsWith("video")) {
         videoRef.current.play()
@@ -222,9 +221,9 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
             <Dialog>
               <DialogTrigger asChild>
                 <Button 
-                  variant="outline" 
+                  variant="default" 
                   size="sm" 
-                  className="bg-black/50 hover:bg-black/70 text-white border-white/20"
+                  className="bg-[#0EA5E9] text-white hover:bg-[#0284C7] transition-colors duration-300 shadow-lg"
                   onClick={() => {
                     if (media.id) {
                       trackInteraction(media.id);
