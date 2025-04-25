@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
+import { MediaDetailsForm } from "./MediaDetailsForm";
 
 const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ onUploadComplete }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -21,7 +21,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
     }
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (formData: { company_name: string; time_slot: number }) => {
     if (!file || !currentUser) return;
 
     setIsUploading(true);
@@ -36,7 +36,6 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('media')
         .getPublicUrl(`${currentUser.id}/${fileName}`);
@@ -46,10 +45,6 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       else if (file.type.startsWith("video/")) type = "video";
       else if (file.type.startsWith("audio/")) type = "audio";
 
-      // Calculate time slot end (5 minutes from now)
-      const now = Date.now();
-      const timeSlotEnd = now + (5 * 60 * 1000); // 5 minutes in milliseconds
-
       // Add media entry to the database
       const { data: mediaData, error: mediaError } = await supabase
         .from('media')
@@ -57,14 +52,25 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
           name: file.name,
           type: file.type,
           url: publicUrl,
-          userid: currentUser.id, // Fixed: Changed from userId to userid to match DB schema
+          userid: currentUser.id,
           interactions: 0,
-          timeslotend: new Date(timeSlotEnd).toISOString() // Fixed: Changed from timeSlotEnd to timeslotend
+          timeslotend: new Date(Date.now() + formData.time_slot * 60 * 1000).toISOString()
         })
         .select()
         .single();
 
       if (mediaError) throw mediaError;
+
+      // Add media details
+      const { error: detailsError } = await supabase
+        .from('media_details')
+        .insert({
+          media_id: mediaData.id,
+          company_name: formData.company_name,
+          time_slot: formData.time_slot
+        });
+
+      if (detailsError) throw detailsError;
       
       toast({
         title: "Upload successful",
@@ -108,25 +114,16 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
         </div>
         
         {file && (
-          <div className="text-sm text-muted-foreground">
-            Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-          </div>
+          <>
+            <div className="text-sm text-muted-foreground">
+              Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+            </div>
+            
+            <MediaDetailsForm onSubmit={handleUpload} />
+            
+          
+          </>
         )}
-        
-        <Button
-          onClick={handleUpload}
-          disabled={!file || isUploading}
-          className="w-full"
-        >
-          {isUploading ? (
-            "Uploading..."
-          ) : (
-            <>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload
-            </>
-          )}
-        </Button>
       </CardContent>
     </Card>
   );

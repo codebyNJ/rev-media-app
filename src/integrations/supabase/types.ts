@@ -71,6 +71,38 @@ export type Database = {
         }
         Relationships: []
       }
+      media_details: {
+        Row: {
+          company_name: Database["public"]["Enums"]["company_name"]
+          created_at: string | null
+          id: string
+          media_id: string | null
+          time_slot: number
+        }
+        Insert: {
+          company_name: Database["public"]["Enums"]["company_name"]
+          created_at?: string | null
+          id?: string
+          media_id?: string | null
+          time_slot: number
+        }
+        Update: {
+          company_name?: Database["public"]["Enums"]["company_name"]
+          created_at?: string | null
+          id?: string
+          media_id?: string | null
+          time_slot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_details_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -82,7 +114,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      company_name: "Company1" | "Company2" | "Company3" | "Company4"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -197,6 +229,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      company_name: ["Company1", "Company2", "Company3", "Company4"],
+    },
   },
 } as const
