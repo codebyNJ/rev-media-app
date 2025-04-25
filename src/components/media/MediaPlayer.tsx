@@ -60,6 +60,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
     if (videoRef.current) {
       videoRef.current.pause();
       videoRef.current.currentTime = 0;
+      videoRef.current.loop = true;  // Set loop property
       
       if (media?.type.startsWith("video")) {
         videoRef.current.play()

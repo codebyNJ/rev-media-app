@@ -23,14 +23,22 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [userRole, setUserRole] = useState<"controller" | "client" | null>(null);
+  const [userRole, setUserRole] = useState<"controller" | "client" | null>(() => {
+    // Initialize userRole from localStorage
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('currentUser');
+      const storedRole = localStorage.getItem('userRole');
+      if (storedUser && storedRole) {
+        return storedRole as "controller" | "client";
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // First set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // Handle auth state changes
       if (event === 'SIGNED_IN') {
         toast({
           title: "Signed in",
@@ -38,6 +46,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setCurrentUser(newSession?.user ?? null);
         setSession(newSession);
+        
+        // Store user data in localStorage
+        if (newSession?.user) {
+          localStorage.setItem('currentUser', JSON.stringify(newSession.user));
+        }
       } else if (event === 'SIGNED_OUT') {
         toast({
           title: "Signed out",
@@ -45,18 +58,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setCurrentUser(null);
         setSession(null);
-        setUserRole(null); 
-        localStorage.removeItem(`userRole_${currentUser?.id}`);
+        // Only clear role if user is controller
+        if (userRole === 'controller') {
+          setUserRole(null);
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('currentUser');
+        }
       } else if (event === 'TOKEN_REFRESHED') {
         setSession(newSession);
       }
     });
 
-    // Then check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setCurrentUser(initialSession?.user ?? null);
       setSession(initialSession);
       setLoading(false);
+
+      // Restore user data from localStorage if session exists
+      if (initialSession?.user) {
+        localStorage.setItem('currentUser', JSON.stringify(initialSession.user));
+      }
     });
 
     return () => {
@@ -64,22 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Restore role from localStorage if available
-  useEffect(() => {
-    if (currentUser) {
-      const savedRole = localStorage.getItem(`userRole_${currentUser.id}`);
-      if (savedRole === "controller" || savedRole === "client") {
-        setUserRole(savedRole);
-      }
-    }
-  }, [currentUser]);
-
   // Save role to localStorage when it changes
   useEffect(() => {
-    if (currentUser && userRole) {
-      localStorage.setItem(`userRole_${currentUser.id}`, userRole);
+    if (userRole) {
+      localStorage.setItem('userRole', userRole);
     }
-  }, [userRole, currentUser]);
+  }, [userRole]);
 
   const value = {
     currentUser,
