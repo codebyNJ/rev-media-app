@@ -11,9 +11,9 @@ import {
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database } from "@/integrations/supabase/types";
+import { Constants } from "@/integrations/supabase/types";
 
-const companyNames = Database['public']['Enums']['company_name'];
+const companyNames = Constants.public.Enums.company_name;
 
 type CompanyData = {
   company_name: string;
@@ -57,7 +57,6 @@ const CompanyDashboard = () => {
       try {
         setIsLoading(true);
         
-        // Fetch media data with details
         const { data: mediaWithDetails, error: mediaError } = await supabase
           .from('media')
           .select(`
@@ -67,11 +66,9 @@ const CompanyDashboard = () => {
 
         if (mediaError) throw mediaError;
 
-        // Process the data for display
         const processedMediaData: MediaData[] = (mediaWithDetails || [])
           .filter(item => item.media_details)
           .map(item => {
-            // Extract media_details safely - it's the first item in an array
             const mediaDetails = item.media_details as unknown as MediaDetailsType;
             return {
               id: item.id,
@@ -86,7 +83,6 @@ const CompanyDashboard = () => {
         
         setMediaData(processedMediaData);
 
-        // Aggregate data by company
         const companyStats = processedMediaData.reduce((acc: Record<string, CompanyData>, item) => {
           const { company_name, time_slot, interactions } = item;
           
@@ -108,7 +104,6 @@ const CompanyDashboard = () => {
         
         setCompanyData(Object.values(companyStats));
 
-        // Generate mock interaction data for the selected company
         generateInteractionData(selectedCompany, processedMediaData);
         
       } catch (error: any) {
@@ -134,21 +129,16 @@ const CompanyDashboard = () => {
     const now = new Date();
     const hourlyData: InteractionDataPoint[] = [];
     
-    // Generate data for the past 24 hours
     for (let i = 23; i >= 0; i--) {
       const timePoint = new Date(now);
       timePoint.setHours(now.getHours() - i);
       
       let interactions = 0;
       
-      // If "all" is selected, sum interactions from all companies
-      // Otherwise, filter by the selected company
       if (companyName === "all") {
-        // Distribute total interactions across the time periods with some randomness
         const totalInteractions = mediaItems.reduce((sum, item) => sum + item.interactions, 0);
         interactions = Math.round((totalInteractions / 24) * (0.5 + Math.random()));
       } else {
-        // Filter interactions by company and add randomness
         const companyMedia = mediaItems.filter(item => item.company_name === companyName);
         const companyTotalInteractions = companyMedia.reduce((sum, item) => sum + item.interactions, 0);
         interactions = Math.round((companyTotalInteractions / 24) * (0.5 + Math.random()));

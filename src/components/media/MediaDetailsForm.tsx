@@ -7,10 +7,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
-import { Database } from "@/integrations/supabase/types";
+import { Constants } from "@/integrations/supabase/types";
 
-// Use the company names from the Database type
-const companyNames = Database['public']['Enums']['company_name'];
+// Use the company names from Constants instead of Database type
+const companyNames = Constants.public.Enums.company_name;
 type CompanyName = typeof companyNames[number];
 
 const formSchema = z.object({

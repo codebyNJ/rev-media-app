@@ -46,6 +46,11 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       else if (file.type.startsWith("video/")) type = "video";
       else if (file.type.startsWith("audio/")) type = "audio";
 
+      // Calculate time slot end as Date object first, then convert to ISO string
+      const timeSlotMinutes = formData.time_slot;
+      const timeSlotMilliseconds = timeSlotMinutes * 60 * 1000;
+      const timeSlotEnd = new Date(Date.now() + timeSlotMilliseconds);
+
       // Add media entry to the database
       const { data: mediaData, error: mediaError } = await supabase
         .from('media')
@@ -55,7 +60,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
           url: publicUrl,
           userid: currentUser.id,
           interactions: 0,
-          timeslotend: new Date(Date.now() + formData.time_slot * 60 * 1000).toISOString()
+          timeslotend: timeSlotEnd.toISOString()
         })
         .select()
         .single();
@@ -117,7 +122,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
         {file && (
           <>
             <div className="text-sm text-muted-foreground">
-              Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+              Selected: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
             </div>
             
             <MediaDetailsForm onSubmit={handleUpload} />
