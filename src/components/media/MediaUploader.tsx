@@ -18,7 +18,20 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      // Convert MB to bytes for comparison (10MB limit)
+      const maxSize = 10 * 1024 * 1024;
+      
+      if (selectedFile.size > maxSize) {
+        toast({
+          title: "File too large",
+          description: "Please select a file smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setFile(selectedFile);
     }
   };
 
@@ -33,23 +46,21 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       const fileName = `${Date.now()}.${fileExt}`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('media')
-        .upload(`${currentUser.id}/${fileName}`, file);
+        .upload(`${currentUser.id}/${fileName}`, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 
+      // Get public URL for the uploaded file
       const { data: { publicUrl } } = supabase.storage
         .from('media')
         .getPublicUrl(`${currentUser.id}/${fileName}`);
 
-      let type = "unknown";
-      if (file.type.startsWith("image/")) type = "image";
-      else if (file.type.startsWith("video/")) type = "video";
-      else if (file.type.startsWith("audio/")) type = "audio";
-
-      // Calculate time slot end as Date object first, then convert to ISO string
+      // Calculate time slot end
       const timeSlotMinutes = formData.time_slot;
-      const timeSlotMilliseconds = timeSlotMinutes * 60 * 1000;
-      const timeSlotEnd = new Date(Date.now() + timeSlotMilliseconds);
+      const timeSlotEnd = new Date(Date.now() + timeSlotMinutes * 60 * 1000);
 
       // Add media entry to the database
       const { data: mediaData, error: mediaError } = await supabase
@@ -60,7 +71,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
           url: publicUrl,
           userid: currentUser.id,
           interactions: 0,
-          timeslotend: timeSlotEnd.toISOString()
+          timeslotend: timeSlotEnd.toISOString(),
         })
         .select()
         .single();
@@ -77,7 +88,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
         });
 
       if (detailsError) throw detailsError;
-      
+
       toast({
         title: "Upload successful",
         description: `${file.name} has been uploaded successfully.`,
@@ -89,7 +100,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       // Reset the input
       const fileInput = document.getElementById('media-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-      
+
     } catch (error: any) {
       toast({
         title: "Upload failed",
@@ -115,6 +126,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
             type="file"
             accept="image/*,video/*,audio/*"
             onChange={handleFileChange}
+            disabled={isUploading}
             className="bg-muted/50"
           />
         </div>
