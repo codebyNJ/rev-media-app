@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,11 @@ type InteractionDataPoint = {
   interactions: number;
 }
 
+type MediaDetailsType = {
+  company_name: string;
+  time_slot: number;
+}
+
 const CompanyDashboard = () => {
   const [companyData, setCompanyData] = useState<CompanyData[]>([]);
   const [mediaData, setMediaData] = useState<MediaData[]>([]);
@@ -65,8 +71,8 @@ const CompanyDashboard = () => {
             id: item.id,
             name: item.name,
             type: item.type,
-            company_name: item.media_details?.company_name || "Unknown",
-            time_slot: item.media_details?.time_slot || 0,
+            company_name: (item.media_details as MediaDetailsType).company_name || "Unknown",
+            time_slot: (item.media_details as MediaDetailsType).time_slot || 0,
             created_at: new Date(item.created_at || "").toLocaleString(),
             interactions: item.interactions || 0
           }));
@@ -221,7 +227,6 @@ const CompanyDashboard = () => {
             <div className="h-[400px]">
               <ChartContainer className="h-full" config={{
                 interactions: {
-                  color: "#3b82f6",
                   theme: {
                     light: "#3b82f6",
                     dark: "#60a5fa"
