@@ -67,15 +67,19 @@ const CompanyDashboard = () => {
         // Process the data for display
         const processedMediaData: MediaData[] = (mediaWithDetails || [])
           .filter(item => item.media_details)
-          .map(item => ({
-            id: item.id,
-            name: item.name,
-            type: item.type,
-            company_name: (item.media_details as MediaDetailsType).company_name || "Unknown",
-            time_slot: (item.media_details as MediaDetailsType).time_slot || 0,
-            created_at: new Date(item.created_at || "").toLocaleString(),
-            interactions: item.interactions || 0
-          }));
+          .map(item => {
+            // Extract media_details safely - it's the first item in an array
+            const mediaDetails = item.media_details as unknown as MediaDetailsType;
+            return {
+              id: item.id,
+              name: item.name,
+              type: item.type,
+              company_name: mediaDetails?.company_name || "Unknown",
+              time_slot: mediaDetails?.time_slot || 0,
+              created_at: new Date(item.created_at || "").toLocaleString(),
+              interactions: item.interactions || 0
+            };
+          });
         
         setMediaData(processedMediaData);
 
