@@ -13,8 +13,11 @@ import { Constants } from "@/integrations/supabase/types";
 const companyNames = Constants.public.Enums.company_name;
 type CompanyName = typeof companyNames[number];
 
+// Convert the readonly array to a mutable array for zod schema
+const mutableCompanyNames = [...companyNames] as [CompanyName, ...CompanyName[]];
+
 const formSchema = z.object({
-  company_name: z.enum(companyNames as [CompanyName, ...CompanyName[]]),
+  company_name: z.enum(mutableCompanyNames),
   time_slot: z.number().min(1, "Time slot must be greater than 0"),
 });
 

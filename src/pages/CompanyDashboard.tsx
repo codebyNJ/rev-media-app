@@ -17,6 +17,7 @@ import { Constants } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 
 const companyNames = Constants.public.Enums.company_name;
+const mutableCompanyNames = [...companyNames];
 
 type CompanyData = {
   company_name: string;
@@ -53,7 +54,7 @@ const CompanyDashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const { currentUser, userRole } = useAuth();
-  const [companyList, setCompanyList] = useState<string[]>(companyNames);
+  const [companyList, setCompanyList] = useState<string[]>(mutableCompanyNames);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
