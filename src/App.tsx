@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ControllerDashboard from "./pages/ControllerDashboard";
 import ClientView from "./pages/ClientView";
+import CompanyDashboard from "./pages/CompanyDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/register/:role" element={<Register />} />
             <Route path="/controller" element={<ControllerDashboard />} />
             <Route path="/client" element={<ClientView />} />
+            <Route path="/dashboard" element={<CompanyDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -5,10 +5,12 @@ import MediaUploader from "@/components/media/MediaUploader";
 import MediaList from "@/components/media/MediaList";
 import MediaPlayer from "@/components/media/MediaPlayer";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase-client";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { BarChart3 } from "lucide-react";
 
 const ControllerDashboard = () => {
   const [mediaList, setMediaList] = useState<any[]>([]);
@@ -152,6 +154,15 @@ const ControllerDashboard = () => {
 
   return (
     <Layout title="Controller Dashboard">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Media Controller</h1>
+        <Link to="/dashboard">
+          <Button className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            View Analytics Dashboard
+          </Button>
+        </Link>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
