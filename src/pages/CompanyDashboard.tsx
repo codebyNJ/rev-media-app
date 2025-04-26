@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,6 +14,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Constants } from "@/integrations/supabase/types";
+import { Button } from "@/components/ui/button";
 
 const companyNames = Constants.public.Enums.company_name;
 
@@ -161,7 +164,14 @@ const CompanyDashboard = () => {
     <Layout title="Company Dashboard">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Company Media Analytics</h1>
+          <div className="flex items-center space-x-2">
+            <Link to="/controller">
+              <Button variant="ghost" size="icon" className="mr-2">
+                <ChevronLeft className="h-6 w-6" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-semibold">Company Media Analytics</h1>
+          </div>
           <div className="w-[200px]">
             <Select value={selectedCompany} onValueChange={handleCompanyChange}>
               <SelectTrigger>
