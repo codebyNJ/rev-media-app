@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,9 @@ import {
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Database } from "@/integrations/supabase/types";
+
+const companyNames = Database['public']['Enums']['company_name'];
 
 type CompanyData = {
   company_name: string;
@@ -48,6 +50,7 @@ const CompanyDashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
   const { currentUser, userRole } = useAuth();
+  const [companyList, setCompanyList] = useState<string[]>(companyNames);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -123,12 +126,10 @@ const CompanyDashboard = () => {
     fetchDashboardData();
   }, [toast]);
 
-  // Update interaction data when a different company is selected
   useEffect(() => {
     generateInteractionData(selectedCompany, mediaData);
   }, [selectedCompany, mediaData]);
 
-  // Generate 24 hours of interaction data for a company
   const generateInteractionData = (companyName: string, mediaItems: MediaData[]) => {
     const now = new Date();
     const hourlyData: InteractionDataPoint[] = [];
@@ -178,9 +179,9 @@ const CompanyDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Companies</SelectItem>
-                {companyData.map(company => (
-                  <SelectItem key={company.company_name} value={company.company_name}>
-                    {company.company_name}
+                {companyList.map(company => (
+                  <SelectItem key={company} value={company}>
+                    {company}
                   </SelectItem>
                 ))}
               </SelectContent>

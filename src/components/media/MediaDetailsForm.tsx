@@ -9,13 +9,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Database } from "@/integrations/supabase/types";
 
-// Define the company names as a tuple of string literals
-const companyNames = ["Company1", "Company2", "Company3", "Company4"] as const;
+// Use the company names from the Database type
+const companyNames = Database['public']['Enums']['company_name'];
 type CompanyName = typeof companyNames[number];
 
-// Create a schema using z.enum with the literal values
 const formSchema = z.object({
-  company_name: z.enum(companyNames),
+  company_name: z.enum(companyNames as [CompanyName, ...CompanyName[]]),
   time_slot: z.number().min(1, "Time slot must be greater than 0"),
 });
 
@@ -29,7 +28,7 @@ export function MediaDetailsForm({ onSubmit }: MediaDetailsFormProps) {
   const form = useForm<MediaDetailsFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      company_name: "Company1",
+      company_name: companyNames[0],
       time_slot: 1,
     },
   });
