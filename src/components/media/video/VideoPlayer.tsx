@@ -27,12 +27,24 @@ const VideoPlayer = ({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(error => {
-        console.log("Autoplay failed:", error);
-      });
-    }
-  }, [url]);
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+    
+    const handleEnded = () => {
+      onVideoEnd();
+    };
+    
+    videoElement.addEventListener('ended', handleEnded);
+    
+    // Try to play the video when the component mounts or URL changes
+    videoElement.play().catch(error => {
+      console.log("Autoplay failed:", error);
+    });
+    
+    return () => {
+      videoElement.removeEventListener('ended', handleEnded);
+    };
+  }, [url, onVideoEnd]);
 
   const handleInteraction = async () => {
     // Track interaction in Supabase
@@ -47,7 +59,6 @@ const VideoPlayer = ({
         ref={videoRef}
         src={url} 
         className="w-full h-full object-contain bg-black rounded-lg"
-        onEnded={onVideoEnd}
         controls={false}
         loop={true}
         autoPlay={true}

@@ -19,17 +19,12 @@ const ControllerDashboard = () => {
   const [activeVideoQueue, setActiveVideoQueue] = useState<string[]>([]);
   const { currentUser, userRole, loading } = useAuth();
 
-  // Show loading state while checking authentication
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
-
-  // Redirect if not logged in or not a controller
-  if (!currentUser || userRole !== "controller") {
-    return <Navigate to="/" />;
-  }
-
   useEffect(() => {
+    // Only fetch media if user is authenticated and a controller
+    if (!currentUser || userRole !== "controller") {
+      return;
+    }
+
     // Initial fetch of media items
     const fetchMedia = async () => {
       const { data } = await supabase
@@ -68,7 +63,7 @@ const ControllerDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [filtering, currentUser]);
+  }, [filtering, currentUser, userRole]);
 
   const handleUploadComplete = (media: any) => {
     toast({
@@ -151,6 +146,16 @@ const ControllerDashboard = () => {
       }
     }
   };
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  // Redirect if not logged in or not a controller
+  if (!currentUser || userRole !== "controller") {
+    return <Navigate to="/" />;
+  }
 
   return (
     <Layout title="Controller Dashboard">
