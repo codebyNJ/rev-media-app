@@ -6,13 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Upload } from "lucide-react";
+import { Upload, Loader } from "lucide-react";
 import { supabase } from "@/lib/supabase-client";
 import { MediaDetailsForm, MediaDetailsFormData } from "./MediaDetailsForm";
+import { Progress } from "@/components/ui/progress";
 
 const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ onUploadComplete }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
@@ -39,17 +41,25 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
     if (!file || !currentUser) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       // Upload file to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
+
+      // Create upload options with onUploadProgress callback
+      const options = {
+        cacheControl: "3600",
+        upsert: false,
+        onUploadProgress: (progress: number) => {
+          setUploadProgress(progress);
+        },
+      };
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('media')
-        .upload(`${currentUser.id}/${fileName}`, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+        .upload(`${currentUser.id}/${fileName}`, file, options);
 
       if (uploadError) throw uploadError;
 
@@ -95,6 +105,7 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
       });
       
       setFile(null);
+      setUploadProgress(0);
       if (onUploadComplete && mediaData) onUploadComplete(mediaData);
       
       // Reset the input
@@ -136,6 +147,16 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
             <div className="text-sm text-muted-foreground">
               Selected: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
             </div>
+            
+            {isUploading && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader className="h-4 w-4 animate-spin" />
+                  Uploading... {Math.round(uploadProgress)}%
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
             
             <MediaDetailsForm onSubmit={handleUpload} />
           </>
