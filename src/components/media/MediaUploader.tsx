@@ -19,13 +19,13 @@ const MediaUploader: React.FC<{ onUploadComplete?: (media: any) => void }> = ({ 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      // Convert MB to bytes for comparison (10MB limit)
-      const maxSize = 10 * 1024 * 1024;
+      // Convert MB to bytes for comparison (25MB limit)
+      const maxSize = 25 * 1024 * 1024;
       
       if (selectedFile.size > maxSize) {
         toast({
           title: "File too large",
-          description: "Please select a file smaller than 10MB",
+          description: "Please select a file smaller than 25MB",
           variant: "destructive",
         });
         return;
