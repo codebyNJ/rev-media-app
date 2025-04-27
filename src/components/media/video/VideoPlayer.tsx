@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaDetails from "../MediaDetails";
@@ -26,25 +26,36 @@ const VideoPlayer = ({
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Use a ref to store the onVideoEnd callback to avoid dependencies issues
+  const onVideoEndRef = useRef(onVideoEnd);
+  
+  // Update the ref when the callback changes
+  useEffect(() => {
+    onVideoEndRef.current = onVideoEnd;
+  }, [onVideoEnd]);
+
   useEffect(() => {
     const videoElement = videoRef.current;
     if (!videoElement) return;
     
     const handleEnded = () => {
-      onVideoEnd();
+      // Call the callback through the ref to avoid dependency issues
+      onVideoEndRef.current();
     };
     
     videoElement.addEventListener('ended', handleEnded);
     
     // Try to play the video when the component mounts or URL changes
-    videoElement.play().catch(error => {
-      console.log("Autoplay failed:", error);
-    });
+    if (isPlaying) {
+      videoElement.play().catch(error => {
+        console.log("Autoplay failed:", error);
+      });
+    }
     
     return () => {
       videoElement.removeEventListener('ended', handleEnded);
     };
-  }, [url, onVideoEnd]);
+  }, [url, isPlaying]); // Remove onVideoEnd from dependencies
 
   const handleInteraction = async () => {
     // Track interaction in Supabase

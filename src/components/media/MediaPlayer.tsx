@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import VideoPlayer from "./video/VideoPlayer";
 import ImageViewer from "./image/ImageViewer";
@@ -41,6 +40,12 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [interactions, setInteractions] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleVideoEnd = useCallback(() => {
+    if (onVideoEnd) {
+      onVideoEnd();
+    }
+  }, [onVideoEnd]);
 
   useEffect(() => {
     setIsPlaying(false);
@@ -113,7 +118,7 @@ const MediaPlayer: React.FC<MediaPlayerProps> = ({ media, isController = false, 
           isPlaying={isPlaying}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
-          onVideoEnd={onVideoEnd}
+          onVideoEnd={handleVideoEnd}
           onInteraction={handleInteraction}
         />
       </div>
