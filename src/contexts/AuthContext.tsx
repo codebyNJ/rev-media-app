@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase-client";
 import { useToast } from "@/hooks/use-toast";
+import { requestGeolocationPermission } from "@/utils/geoTracking";
 
 type AuthContextType = {
   currentUser: User | null;
@@ -38,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (event === 'SIGNED_IN') {
         toast({
           title: "Signed in",
@@ -46,6 +47,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         setCurrentUser(newSession?.user ?? null);
         setSession(newSession);
+        
+        // Ask for geolocation permission on sign in
+        try {
+          const permissionGranted = await requestGeolocationPermission();
+          if (permissionGranted) {
+            toast({
+              title: "Location access granted",
+              description: "Your location will be used to track ad interactions.",
+            });
+          } else {
+            toast({
+              title: "Location access denied",
+              description: "Please enable location access for full functionality.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Error requesting location permission:", error);
+        }
         
         // Store user data in localStorage
         if (newSession?.user) {
@@ -78,6 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Restore user data from localStorage if session exists
       if (initialSession?.user) {
         localStorage.setItem('currentUser', JSON.stringify(initialSession.user));
+        
+        // Request geolocation permission if user is already logged in
+        requestGeolocationPermission().catch(error => {
+          console.error("Error requesting location permission:", error);
+        });
       }
     });
 

@@ -4,6 +4,9 @@ import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MediaDetails from "../MediaDetails";
 import { trackInteraction } from "@/lib/firebase";
+import { trackGeolocation } from "@/utils/geoTracking";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface VideoPlayerProps {
   url: string;
@@ -25,7 +28,9 @@ const VideoPlayer = ({
   onInteraction,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
+  
   // Use a ref to store the onVideoEnd callback to avoid dependencies issues
   const onVideoEndRef = useRef(onVideoEnd);
   
@@ -57,11 +62,51 @@ const VideoPlayer = ({
     };
   }, [url, isPlaying]); // Remove onVideoEnd from dependencies
 
+  useEffect(() => {
+    // Track geolocation when the component mounts
+    const trackInitialView = async () => {
+      try {
+        const geoData = await trackGeolocation(
+          mediaId,
+          currentUser?.id,
+          'view'
+        );
+        
+        if (geoData) {
+          console.log('Video view tracked with geolocation');
+        }
+      } catch (error) {
+        console.error('Failed to track geolocation for video view:', error);
+      }
+    };
+    
+    trackInitialView();
+  }, [mediaId, currentUser?.id]);
+
   const handleInteraction = async () => {
-    // Track interaction in Supabase
-    await trackInteraction(mediaId);
-    // Call the parent onInteraction callback
-    onInteraction();
+    try {
+      // Track interaction in Supabase
+      await trackInteraction(mediaId);
+      
+      // Track geolocation for this click
+      const geoData = await trackGeolocation(
+        mediaId,
+        currentUser?.id,
+        'click'
+      );
+      
+      if (geoData) {
+        toast({
+          title: "Interaction tracked",
+          description: `Location recorded at ${geoData.latitude.toFixed(4)}, ${geoData.longitude.toFixed(4)}`,
+        });
+      }
+      
+      // Call the parent onInteraction callback
+      onInteraction();
+    } catch (error) {
+      console.error('Interaction tracking error:', error);
+    }
   };
 
   return (
